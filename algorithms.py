@@ -17,18 +17,35 @@ class GraphAlgorithms:
 
     @staticmethod
     def dfs(graph_data, start_id, end_id):
-        visited = []
-        path = []
-        stack = [(start_id, [start_id], 0)]
+        visited = []  # 记录所有访问过的节点
+        min_cost = float('infinity')  # 最小权重
+        shortest_path = []  # 最短路径
+
+        stack = [(start_id, [start_id], 0, {start_id})]  # (当前节点, 路径, 权重, 当前路径中的节点集合)
+
         while stack:
-            current, route, cost = stack.pop()
+            current, route, cost, path_visited = stack.pop()
+
+            # 记录当前节点为已访问
             if current not in visited:
                 visited.append(current)
-                if current == end_id:
-                    return visited, route, cost
+
+            # 如果到达目标节点，更新最短路径
+            if current == end_id:
+                if cost < min_cost:
+                    min_cost = cost
+                    shortest_path = route
+            else:
+                # 探索邻居节点
                 for nx, w in GraphAlgorithms.getNeighbors(graph_data, current):
-                    if nx not in visited:
-                        stack.append((nx, route + [nx], cost + w))
+                    if nx not in path_visited:  # 避免当前路径中的环路
+                        new_path_visited = path_visited.copy()
+                        new_path_visited.add(nx)
+                        stack.append((nx, route + [nx], cost + w, new_path_visited))
+
+        # 返回访问过的节点列表、最短路径和最小权重
+        if shortest_path:
+            return visited, shortest_path, min_cost
         return visited, [], 0
 
     @staticmethod
