@@ -38,19 +38,31 @@ class GraphIO:
                     })
         return {"nodes": nodes, "edges": edges}
 
-    @staticmethod
-    def saveCsv(fname, data):
-        fieldnames = ["type", "id", "x", "y", "start", "end", "weight", "directed"]
-        with open(fname, "w", newline="", encoding="utf-8") as csvfile:
-            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-            writer.writeheader()
-            for n in data["nodes"]:
-                writer.writerow({"type": "node", "id": n["id"], "x": n["x"], "y": n["y"]})
-            for e in data["edges"]:
-                writer.writerow({
-                    "type": "edge",
-                    "start": e["start"],
-                    "end": e["end"],
-                    "weight": e["weight"],
-                    "directed": str(e["directed"])
-                })
+@staticmethod
+def saveCsv(fname, data):
+    fieldnames = ["type", "id", "x", "y", "start", "end", "weight", "directed"]
+    with open(fname, "w", newline="", encoding="utf-8") as csvfile:
+        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+        writer.writeheader()
+        for n in data["nodes"]:
+            writer.writerow({
+                "type": "node",
+                "id": n["id"],
+                "x": str(n["x"]),
+                "y": str(n["y"]),
+                "start": "",
+                "end": "",
+                "weight": "",
+                "directed": ""
+            })
+        for e in data["edges"]:
+            writer.writerow({
+                "type": "edge",
+                "id": "",
+                "x": "",
+                "y": "",
+                "start": e["start"],
+                "end": e["end"],
+                "weight": str(e["weight"]),
+                "directed": str(e["directed"])
+            })
