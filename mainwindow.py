@@ -11,6 +11,7 @@ class MainWindow(QMainWindow):
         super().__init__()
         # ...existing code...
         self.setWindowTitle("可视化最短路径演示")
+        self.resize(1920, 1080)
         self.graph_data = {"nodes": [], "edges": []}
         self.initUI()
 
@@ -78,7 +79,11 @@ class MainWindow(QMainWindow):
 
         # 已探索节点数、路径总权重
         self.infoLabel = QLabel("已探索节点: 0 | 路径总权重: 0")
+        # 已探索节点数、路径总权重和执行时间
+        self.infoLabel = QLabel("已探索节点: 0 | 路径总权重: 0")
         leftLayout.addWidget(self.infoLabel)
+        self.timeLabel = QLabel("执行耗时: 0 ms")
+        leftLayout.addWidget(self.timeLabel)
         leftWidget.setLayout(leftLayout)
 
         # 正中央画布
@@ -89,7 +94,7 @@ class MainWindow(QMainWindow):
         mainLayout.addWidget(topWidget)
         bodylayout = QHBoxLayout()
         bodylayout.addWidget(leftWidget)
-        bodylayout.addWidget(self.canvas, 1)
+        bodylayout.addWidget(self.canvas, 5)
         mainLayout.addLayout(bodylayout)
         centralWidget.setLayout(mainLayout)
         self.setCentralWidget(centralWidget)
@@ -121,17 +126,24 @@ class MainWindow(QMainWindow):
     def onSearchAlgorithm(self, algo):
         self.currentAlgo = algo
 
+
     def onStartSearch(self):
         start_id = self.startEdit.text()
         end_id = self.endEdit.text()
         # ...existing code...
+        import time
+        start_time = time.time()
         search_order, path_nodes, total_cost = GraphAlgorithms.runSearch(
             self.graph_data, self.currentAlgo, start_id, end_id
         )
+        end_time = time.time()
+        execution_time = (end_time - start_time) * 1000  # 转换为毫秒
+
         self.resultTable.setRowCount(0)
         for i, node in enumerate(search_order):
             self.resultTable.insertRow(i)
             self.resultTable.setItem(i, 0, QTableWidgetItem(str(i + 1)))
             self.resultTable.setItem(i, 1, QTableWidgetItem(str(node)))
         self.infoLabel.setText(f"已探索节点: {len(search_order)} | 路径总权重: {total_cost}")
+        self.timeLabel.setText(f"算法: {self.currentAlgo} | 执行耗时: {execution_time:.2f} ms")
         self.canvas.updateSearchVisualization(search_order, path_nodes)
