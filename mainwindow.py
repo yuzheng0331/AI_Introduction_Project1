@@ -10,7 +10,13 @@ from algorithms import GraphAlgorithms
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        # ...existing code...
+        self.node_add_mode_active = False
+        self.edge_add_mode_active = False
+        self.edge_add_directed = False
+        self.node_ids_visible = True
+        self.edge_weights_visible = True
+        self.active_btn_style = "background-color: #4CAF50; color: white;"
+        self.inactive_btn_style = ""
         self.visualization_timer = None
         self.search_cost = None
         self.total_steps = None
@@ -52,6 +58,10 @@ class MainWindow(QMainWindow):
         topLayout.addWidget(self.addDirectedEdgeBtn)
         topLayout.addWidget(self.showNodeBtn)
         topLayout.addWidget(self.showEdgeBtn)
+
+        # 设置初始状态下显示/隐藏按钮的样式
+        self.showNodeBtn.setStyleSheet(self.active_btn_style)
+        self.showEdgeBtn.setStyleSheet(self.active_btn_style)
         topWidget.setLayout(topLayout)
 
         # 左侧栏布局
@@ -142,20 +152,84 @@ class MainWindow(QMainWindow):
             GraphIO.saveGraph(fname, self.graph_data)
 
     def onAddNode(self):
-        self.canvas.enableAddNodeMode(True)
+        self.node_add_mode_active = not self.node_add_mode_active
+        self.canvas.enableAddNodeMode(self.node_add_mode_active)
+
+        # 更新按钮样式
+        if self.node_add_mode_active:
+            self.addNodeBtn.setStyleSheet(self.active_btn_style)
+            # 关闭其他模式
+            self.edge_add_mode_active = False
+            self.addUndirectedEdgeBtn.setStyleSheet(self.inactive_btn_style)
+            self.addDirectedEdgeBtn.setStyleSheet(self.inactive_btn_style)
+        else:
+            self.addNodeBtn.setStyleSheet(self.inactive_btn_style)
 
     def onAddEdge(self, directed=False):
+        # 如果点击的是当前已激活的按钮，则关闭模式
+        if self.edge_add_mode_active and self.edge_add_directed == directed:
+            self.edge_add_mode_active = False
+            if directed:
+                self.addDirectedEdgeBtn.setStyleSheet(self.inactive_btn_style)
+            else:
+                self.addUndirectedEdgeBtn.setStyleSheet(self.inactive_btn_style)
+        else:
+            # 否则激活该模式
+            self.edge_add_mode_active = True
+            self.edge_add_directed = directed
+
+            # 更新按钮样式
+            if directed:
+                self.addDirectedEdgeBtn.setStyleSheet(self.active_btn_style)
+                self.addUndirectedEdgeBtn.setStyleSheet(self.inactive_btn_style)
+            else:
+                self.addUndirectedEdgeBtn.setStyleSheet(self.active_btn_style)
+                self.addDirectedEdgeBtn.setStyleSheet(self.inactive_btn_style)
+
+            # 关闭其他模式
+            self.node_add_mode_active = False
+            self.addNodeBtn.setStyleSheet(self.inactive_btn_style)
+
         self.canvas.addEdge(directed)
 
     def onToggleNodeIDs(self):
+        self.node_ids_visible = not self.node_ids_visible
         self.canvas.toggleNodeIDs()
 
+        # 更新按钮样式
+        if self.node_ids_visible:
+            self.showNodeBtn.setStyleSheet(self.active_btn_style)
+        else:
+            self.showNodeBtn.setStyleSheet(self.inactive_btn_style)
+
     def onToggleEdgeWeights(self):
+        self.edge_weights_visible = not self.edge_weights_visible
         self.canvas.toggleEdgeWeights()
+
+        # 更新按钮样式
+        if self.edge_weights_visible:
+            self.showEdgeBtn.setStyleSheet(self.active_btn_style)
+        else:
+            self.showEdgeBtn.setStyleSheet(self.inactive_btn_style)
 
     def onSearchAlgorithm(self, algo):
         self.currentAlgo = algo
 
+        # 更新所有算法按钮的样式
+        self.dfsBtn.setStyleSheet(self.inactive_btn_style)
+        self.bfsBtn.setStyleSheet(self.inactive_btn_style)
+        self.aStarBtn.setStyleSheet(self.inactive_btn_style)
+        self.dijkstraBtn.setStyleSheet(self.inactive_btn_style)
+
+        # 设置当前选中的算法按钮样式
+        if algo == "DFS":
+            self.dfsBtn.setStyleSheet(self.active_btn_style)
+        elif algo == "BFS":
+            self.bfsBtn.setStyleSheet(self.active_btn_style)
+        elif algo == "A*":
+            self.aStarBtn.setStyleSheet(self.active_btn_style)
+        elif algo == "Dijkstra":
+            self.dijkstraBtn.setStyleSheet(self.active_btn_style)
 
     def onStartSearch(self):
         start_id = self.startEdit.text()
@@ -189,7 +263,7 @@ class MainWindow(QMainWindow):
         self.canvas.updateSearchVisualization([], [], None)
 
         # 开始逐步显示
-        self.visualization_timer.start(300)  # 每500毫秒显示一个节点
+        self.visualization_timer.start(400)
 
     def showNextSearchStep(self):
         if self.current_step_index < self.total_steps:
