@@ -34,13 +34,13 @@ class GraphIO:
                         "start": row["start"],
                         "end": row["end"],
                         "weight": int(row["weight"]),
-                        "direction": row["direction"]
+                        "directed": row["directed"].lower()=="true"
                     })
         return {"nodes": nodes, "edges": edges}
 
     @staticmethod
     def saveCsv(fname, data):
-        fieldnames = ["type", "id", "x", "y", "start", "end", "weight", "direction"]
+        fieldnames = ["type", "id", "x", "y", "start", "end", "weight", "directed"]
         with open(fname, "w", newline="", encoding="utf-8") as csvfile:
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
             writer.writeheader()
@@ -53,7 +53,7 @@ class GraphIO:
                     "start": "",
                     "end": "",
                     "weight": "",
-                    "direction": ""
+                    "directed": ""
                 })
             for e in data["edges"]:
                 writer.writerow({
@@ -64,5 +64,5 @@ class GraphIO:
                     "start": e["start"],
                     "end": e["end"],
                     "weight": str(e["weight"]),
-                    "direction": str(e["direction"])
+                    "directed": e["directed"]
                 })

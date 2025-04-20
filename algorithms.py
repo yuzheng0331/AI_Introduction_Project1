@@ -50,18 +50,30 @@ class GraphAlgorithms:
 
     @staticmethod
     def bfs(graph_data, start_id, end_id):
-        visited = []
-        path = []
+        visited = []  # 记录所有访问过的节点
+        min_cost = float('infinity')  # 最小权重
+        shortest_path = []  # 最短路径
+
         queue = deque([(start_id, [start_id], 0)])
         while queue:
             current, route, cost = queue.popleft()
+
             if current not in visited:
                 visited.append(current)
+
+                # 如果到达目标节点，更新最短路径
                 if current == end_id:
-                    return visited, route, cost
+                    if cost < min_cost:
+                        min_cost = cost
+                        shortest_path = route
+                # 继续探索即使已经找到目标节点
                 for nx, w in GraphAlgorithms.getNeighbors(graph_data, current):
                     if nx not in visited:
                         queue.append((nx, route + [nx], cost + w))
+
+        # 返回访问过的节点列表、最短路径和最小权重
+        if shortest_path:
+            return visited, shortest_path, min_cost
         return visited, [], 0
 
     @staticmethod
