@@ -42,20 +42,6 @@ class GraphCanvas(QWidget):
                 return True
         return False
 
-    def mousePressEvent(self, event):
-        if self.addNodeMode:
-            # 将鼠标点击位置吸附到网格点
-            x, y = self.snapToGrid(event.x(), event.y())
-
-            # 检查该位置是否已有节点
-            if not self.isNodeAtPosition(x, y):
-                new_id = str(len(self.graph_data["nodes"]) + 1)
-                self.graph_data["nodes"].append({"id": new_id, "x": x, "y": y})
-                self.graphDataChanged.emit(self.graph_data)
-
-            self.addNodeMode = False
-            self.update()
-
     def addEdge(self, directed=False):
         """启用添加边模式，允许用户通过点击两个节点来创建边"""
         self.addEdgeMode = True
@@ -81,7 +67,7 @@ class GraphCanvas(QWidget):
             if not self.isNodeAtPosition(x, y):
                 new_id = str(len(self.graph_data["nodes"]) + 1)
                 self.graph_data["nodes"].append({"id": new_id, "x": x, "y": y})
-            self.addNodeMode = False
+                self.graphDataChanged.emit(self.graph_data)
             self.update()
         elif hasattr(self, 'addEdgeMode') and self.addEdgeMode:
             # 处理添加边模式下的点击
@@ -112,7 +98,6 @@ class GraphCanvas(QWidget):
                     self.graph_data["edges"].append(edge_info)
                     self.graphDataChanged.emit(self.graph_data)
                     # 重置状态
-                    self.addEdgeMode = False
                     self.selectedNodes = []
                     if hasattr(self.parent(), 'statusBar'):
                         self.parent().statusBar().showMessage("边已添加")
