@@ -1,7 +1,6 @@
 from PyQt5.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, \
     QLineEdit, QFileDialog, QTableWidget, QTableWidgetItem, QTableWidgetSelectionRange, QTableWidgetSelectionRange, \
     QFrame
-# ...existing code...
 from PyQt5.QtCore import Qt, QTimer
 from canvas import GraphCanvas
 from readwrite import GraphIO
@@ -40,22 +39,39 @@ class MainWindow(QMainWindow):
         self.importBtn.clicked.connect(self.onImportFile)
         self.exportBtn = QPushButton("导出文件")
         self.exportBtn.clicked.connect(self.onExportFile)
+        
+        # 创建第一个竖分割线
+        vLine1 = QFrame()
+        vLine1.setFrameShape(QFrame.VLine)
+        vLine1.setFrameShadow(QFrame.Sunken)
+        
         self.addNodeBtn = QPushButton("添加节点")
         self.addNodeBtn.clicked.connect(self.onAddNode)
         self.addUndirectedEdgeBtn = QPushButton("添加无向边")
         self.addUndirectedEdgeBtn.clicked.connect(lambda: self.onAddEdge(directed=False))
         self.addDirectedEdgeBtn = QPushButton("添加有向边")
         self.addDirectedEdgeBtn.clicked.connect(lambda: self.onAddEdge(directed=True))
+        self.resetBtn = QPushButton("清空重置")
+        self.resetBtn.clicked.connect(self.onReset)
+        
+        # 创建第二个竖分割线
+        vLine2 = QFrame()
+        vLine2.setFrameShape(QFrame.VLine)
+        vLine2.setFrameShadow(QFrame.Sunken)
+        
         self.showNodeBtn = QPushButton("展示/隐藏节点ID")
         self.showNodeBtn.clicked.connect(self.onToggleNodeIDs)
         self.showEdgeBtn = QPushButton("展示/隐藏边权重值")
         self.showEdgeBtn.clicked.connect(self.onToggleEdgeWeights)
-        # ...existing code...
+        
         topLayout.addWidget(self.importBtn)
         topLayout.addWidget(self.exportBtn)
+        topLayout.addWidget(vLine1)  # 添加第一个竖分割线
         topLayout.addWidget(self.addNodeBtn)
         topLayout.addWidget(self.addUndirectedEdgeBtn)
         topLayout.addWidget(self.addDirectedEdgeBtn)
+        topLayout.addWidget(self.resetBtn)
+        topLayout.addWidget(vLine2)  # 添加第二个竖分割线
         topLayout.addWidget(self.showNodeBtn)
         topLayout.addWidget(self.showEdgeBtn)
 
@@ -103,15 +119,11 @@ class MainWindow(QMainWindow):
 
         # 已探索节点数、路径总权重
         self.infoLabel = QLabel("已探索节点: 0 | 路径总权重: 0")
-        # 已探索节点数、路径总权重和执行时间
-        self.infoLabel = QLabel("已探索节点: 0 | 路径总权重: 0")
         leftLayout.addWidget(self.infoLabel)
         self.timeLabel = QLabel("执行耗时: 0 ms")
         leftLayout.addWidget(self.timeLabel)
         leftWidget.setLayout(leftLayout)
 
-        # 正中央画布
-        self.canvas = GraphCanvas(self)
         # 正中央画布
         self.canvas = GraphCanvas(self)
         # 全局布局
@@ -141,7 +153,6 @@ class MainWindow(QMainWindow):
 
     def onImportFile(self):
         fname, _ = QFileDialog.getOpenFileName(self, "导入图", "", "JSON/CSV Files (*.json *.csv)")
-        # ...existing code...
         if fname:
             self.graph_data = GraphIO.loadGraph(fname)
             self.canvas.loadData(self.graph_data)
@@ -234,7 +245,6 @@ class MainWindow(QMainWindow):
     def onStartSearch(self):
         start_id = self.startEdit.text()
         end_id = self.endEdit.text()
-        # ...existing code...
         import time
         start_time = time.time()
         search_order, path_nodes, total_cost = GraphAlgorithms.runSearch(
@@ -296,3 +306,36 @@ class MainWindow(QMainWindow):
         else:
             # 全部显示完成，停止定时器
             self.visualization_timer.stop()
+
+    def onReset(self):
+        # 重置图数据
+        self.graph_data = {"nodes": [], "edges": []}
+        
+        # 重置画布
+        self.canvas.loadData(self.graph_data)
+        self.canvas.updateSearchVisualization([], [], None)
+        
+        # 重置搜索结果表
+        self.resultTable.setRowCount(0)
+        
+        # 重置信息标签
+        self.infoLabel.setText("已探索节点: 0 | 路径总权重: 0")
+        self.timeLabel.setText("执行耗时: 0 ms")
+        
+        # 重置按钮状态
+        self.node_add_mode_active = False
+        self.edge_add_mode_active = False
+        self.addNodeBtn.setStyleSheet(self.inactive_btn_style)
+        self.addUndirectedEdgeBtn.setStyleSheet(self.inactive_btn_style)
+        self.addDirectedEdgeBtn.setStyleSheet(self.inactive_btn_style)
+        
+        # 重置算法按钮状态
+        self.dfsBtn.setStyleSheet(self.inactive_btn_style)
+        self.bfsBtn.setStyleSheet(self.inactive_btn_style)
+        self.aStarBtn.setStyleSheet(self.inactive_btn_style)
+        self.dijkstraBtn.setStyleSheet(self.inactive_btn_style)
+        
+        # 如果有正在运行的可视化，停止它
+        if self.visualization_timer and self.visualization_timer.isActive():
+            self.visualization_timer.stop()
+
