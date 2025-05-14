@@ -1,3 +1,4 @@
+from PyQt5.QtGui import QBrush
 from PyQt5.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, \
     QLineEdit, QFileDialog, QTableWidget, QTableWidgetItem, QTableWidgetSelectionRange, QTableWidgetSelectionRange, \
     QFrame
@@ -111,6 +112,25 @@ class MainWindow(QMainWindow):
         self.startSearchBtn.clicked.connect(self.onStartSearch)
         leftLayout.addWidget(self.startSearchBtn)
 
+        # 添加调试控制按钮
+        controlLayout = QHBoxLayout()
+        self.prevStepBtn = QPushButton("前一步")
+        self.prevStepBtn.clicked.connect(self.onPreviousStep)
+        self.prevStepBtn.setEnabled(False)
+        
+        self.pauseResumeBtn = QPushButton("暂停")
+        self.pauseResumeBtn.clicked.connect(self.onPauseResume)
+        self.pauseResumeBtn.setEnabled(False)
+        
+        self.nextStepBtn = QPushButton("后一步")
+        self.nextStepBtn.clicked.connect(self.onNextStep)
+        self.nextStepBtn.setEnabled(False)
+        
+        controlLayout.addWidget(self.prevStepBtn)
+        controlLayout.addWidget(self.pauseResumeBtn)
+        controlLayout.addWidget(self.nextStepBtn)
+        leftLayout.addLayout(controlLayout)
+
         # 结果输出表
         self.resultTable = QTableWidget()
         self.resultTable.setColumnCount(2)
@@ -200,8 +220,11 @@ class MainWindow(QMainWindow):
             # 关闭其他模式
             self.node_add_mode_active = False
             self.addNodeBtn.setStyleSheet(self.inactive_btn_style)
+            self.canvas.enableAddNodeMode(False)  # 确保关闭节点添加模式
 
-        self.canvas.addEdge(directed)
+            # 设置画布边添加模式
+            self.canvas.addEdge(directed)
+            print(f"在MainWindow中设置边添加模式: directed={directed}")
 
     def onToggleNodeIDs(self):
         self.node_ids_visible = not self.node_ids_visible
@@ -260,6 +283,12 @@ class MainWindow(QMainWindow):
         self.current_step_index = 0
         self.total_steps = len(search_order)
         self.search_cost = total_cost
+        
+        # 启用控制按钮
+        self.pauseResumeBtn.setText("暂停")
+        self.pauseResumeBtn.setEnabled(True)
+        self.nextStepBtn.setEnabled(True)
+        self.prevStepBtn.setEnabled(False)  # 初始时不能回退
 
         # 创建定时器用于逐步显示
         self.visualization_timer = QTimer(self)
@@ -280,13 +309,18 @@ class MainWindow(QMainWindow):
             # 添加一行到表格
             i = self.current_step_index
             node = self.full_search_order[i]
+            start_id = self.startEdit.text()
             end_id = self.endEdit.text()
             order_item = QTableWidgetItem(str(i + 1))
             node_item = QTableWidgetItem(str(node))
             self.resultTable.insertRow(i)
             if node in self.full_path_nodes:
-                order_item.setBackground(Qt.yellow)  # 使用黄色背景高亮
-                node_item.setBackground(Qt.yellow)
+                if node == start_id or node == end_id:
+                    order_item.setBackground(QBrush(Qt.red))
+                    node_item.setBackground(QBrush(Qt.yellow))
+                else:
+                    order_item.setBackground(QBrush(Qt.yellow))  # 使用蓝色背景高亮
+                    node_item.setBackground(QBrush(Qt.yellow))
             self.resultTable.setItem(i, 0, order_item)
             self.resultTable.setItem(i, 1, node_item)
 
@@ -303,9 +337,72 @@ class MainWindow(QMainWindow):
 
             # 递增索引
             self.current_step_index += 1
+            
+            # 启用前一步按钮
+            self.prevStepBtn.setEnabled(True)
         else:
             # 全部显示完成，停止定时器
             self.visualization_timer.stop()
+            self.pauseResumeBtn.setEnabled(False)
+            self.nextStepBtn.setEnabled(False)
+
+    def onPreviousStep(self):
+        if self.current_step_index > 1:  # 至少有一步可以回退
+            # 暂停可视化计时器
+            if self.visualization_timer and self.visualization_timer.isActive():
+                self.visualization_timer.stop()
+                self.pauseResumeBtn.setText("继续")
+
+            # 减少当前步骤索引
+            self.current_step_index -= 1
+
+            # 删除表格中的最后一行
+            if self.resultTable.rowCount() > 0:
+                self.resultTable.removeRow(self.resultTable.rowCount() - 1)
+
+            # 直接更新画布显示
+            end_id = self.endEdit.text()
+            current_order = self.full_search_order[:self.current_step_index]
+            current_path = [n for n in self.full_path_nodes if n in current_order]
+            self.canvas.updateSearchVisualization(current_order, current_path, end_id)
+
+            # 更新信息标签
+            self.infoLabel.setText(
+                f"已探索节点: {self.current_step_index}/{self.total_steps} | 路径总权重: {self.search_cost}")
+
+            # 如果回退到第一步，禁用前一步按钮
+            if self.current_step_index <= 1:
+                self.prevStepBtn.setEnabled(False)
+
+            # 确保后一步按钮可用
+            self.nextStepBtn.setEnabled(True)
+            self.pauseResumeBtn.setEnabled(True)
+
+    def onPauseResume(self):
+        if self.visualization_timer:
+            if self.visualization_timer.isActive():
+                # 当前正在运行，暂停它
+                self.visualization_timer.stop()
+                self.pauseResumeBtn.setText("继续")
+            else:
+                # 当前已暂停，继续运行
+                self.visualization_timer.start(400)
+                self.pauseResumeBtn.setText("暂停")
+
+    def onNextStep(self):
+        # 如果正在自动运行，先暂停
+        if self.visualization_timer and self.visualization_timer.isActive():
+            self.visualization_timer.stop()
+            self.pauseResumeBtn.setText("继续")
+        
+        # 手动执行下一步
+        if self.current_step_index < self.total_steps:
+            self.showNextSearchStep()
+            
+            # 如果显示到最后一步，禁用下一步按钮
+            if self.current_step_index >= self.total_steps:
+                self.nextStepBtn.setEnabled(False)
+                self.pauseResumeBtn.setEnabled(False)
 
     def onReset(self):
         # 重置图数据
@@ -338,4 +435,8 @@ class MainWindow(QMainWindow):
         # 如果有正在运行的可视化，停止它
         if self.visualization_timer and self.visualization_timer.isActive():
             self.visualization_timer.stop()
-
+        
+        # 禁用控制按钮
+        self.prevStepBtn.setEnabled(False)
+        self.pauseResumeBtn.setEnabled(False)
+        self.nextStepBtn.setEnabled(False)
