@@ -1,6 +1,7 @@
 from collections import deque
 import heapq
 import math
+import time
 
 class GraphAlgorithms:
     @staticmethod
@@ -17,6 +18,7 @@ class GraphAlgorithms:
 
     @staticmethod
     def dfs(graph_data, start_id, end_id):
+        start_time = time.time()
         visited = []  # 记录所有访问过的节点
         min_cost = float('infinity')  # 最小权重
         shortest_path = []  # 最短路径
@@ -42,7 +44,8 @@ class GraphAlgorithms:
                         new_path_visited = path_visited.copy()
                         new_path_visited.add(nx)
                         stack.append((nx, route + [nx], cost + w, new_path_visited))
-
+        end_time = time.time()
+        print("DFS算法耗时:", end_time - start_time)
         # 返回访问过的节点列表、最短路径和最小权重
         if shortest_path:
             return visited, shortest_path, min_cost
@@ -50,6 +53,7 @@ class GraphAlgorithms:
 
     @staticmethod
     def bfs(graph_data, start_id, end_id):
+        start_time = time.time()
         visited = []  # 记录所有访问过的节点
         min_cost = float('infinity')  # 最小权重
         shortest_path = []  # 最短路径
@@ -70,7 +74,8 @@ class GraphAlgorithms:
                 for nx, w in GraphAlgorithms.getNeighbors(graph_data, current):
                     if nx not in visited:
                         queue.append((nx, route + [nx], cost + w))
-
+        end_time = time.time()
+        print("BFS算法耗时:", end_time - start_time)
         # 返回访问过的节点列表、最短路径和最小权重
         if shortest_path:
             return visited, shortest_path, min_cost
@@ -122,7 +127,7 @@ class GraphAlgorithms:
                     g_cost = dist[current] + w
                     if g_cost < dist[nx]:
                         dist[nx] = g_cost
-                        f_cost = g_cost + heuristic(nx, end_id)
+                        f_cost = g_cost + heuristic(nx, end_id)/50
                         prev[nx] = current
                         heapq.heappush(open_set, (f_cost, nx))
         return visited, [], 0
